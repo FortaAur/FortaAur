@@ -1,0 +1,85 @@
+// ================= BACKEND (Node.js) =================
+// Creeaza fisier: server.js
+
+const express = require('express');
+const multer = require('multer');
+const cors = require('cors');
+const fs = require('fs');
+
+const app = express();
+app.use(cors());
+app.use(express.static('uploads'));
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+
+const upload = multer({ storage });
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ file: req.file.filename });
+});
+
+app.get('/files', (req, res) => {
+  fs.readdir('uploads', (err, files) => {
+    res.json(files);
+  });
+});
+
+app.listen(3000, () => console.log('Server pornit pe http://localhost:3000'));
+
+
+// ================= FRONTEND UPDATE =================
+// In HTML inlocuieste functiile JS cu acestea:
+
+async function uploadFile(){
+  const fileInput = document.getElementById('fileUpload');
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  await fetch('http://localhost:3000/upload', {
+    method: 'POST',
+    body: formData
+  });
+
+  loadFiles();
+}
+
+async function loadFiles(){
+  const res = await fetch('http://localhost:3000/files');
+  const files = await res.json();
+
+  const list = document.getElementById('fileList');
+  list.innerHTML = '';
+
+  files.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `
+      ${f}
+      <a href="http://localhost:3000/${f}" download>
+        <button>Download</button>
+      </a>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// apeleaza la start
+loadFiles();
+
+
+// ================= INSTRUCTIUNI =================
+// 1. Instaleaza Node.js
+// 2. In folder:
+//    npm init -y
+//    npm install express multer cors
+// 3. Creeaza folder "uploads"
+// 4. ruleaza:
+//    node server.js
+
+// GATA ✅ acum ai cloud local pentru reshade-uri
